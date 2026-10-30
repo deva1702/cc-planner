@@ -6,6 +6,7 @@ import {
   Plus,
   X,
   Trash2,
+  Workflow,
 } from 'lucide-react'
 
 import { fmtDate } from '../utils'
@@ -13,6 +14,7 @@ import { fmtDate } from '../utils'
 export default function PlannerList({
   projects,
   createPlanner,
+  createSampleFlow,
   message,
   setMessage,
   loadProjects,
@@ -27,13 +29,25 @@ export default function PlannerList({
           <p>Manage your project planning workflows.</p>
         </div>
 
-        <button
-          className="primary-button"
-          onClick={createPlanner}
-        >
-          <Plus size={16} />
-          Create Planner
-        </button>
+        <div className="list-header-actions">
+          <button
+            type="button"
+            className="sample-flow-button"
+            onClick={createSampleFlow}
+            disabled={false}
+          >
+            <Workflow size={16} />
+            Sample Flow
+          </button>
+
+          <button
+            className="primary-button"
+            onClick={createPlanner}
+          >
+            <Plus size={16} />
+            Create Planner
+          </button>
+        </div>
       </header>
 
       {message && (

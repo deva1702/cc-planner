@@ -9,16 +9,18 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react'
-import { GitBranch } from 'lucide-react'
+import { GitBranch, Workflow } from 'lucide-react'
 
 import Sidebar from './components/Sidebar'
 import WorkflowCanvas from './components/WorkflowCanvas'
 import PlannerList from './pages/PlannerList'
 import CalendarPage from './pages/CalendarPage'
 
+
 import {
   API,
   DEFAULT_PROJECT,
+  SAMPLE,
   fmtDate,
   dateKey,
   parseError,
@@ -534,6 +536,88 @@ function AppInner() {
     }
   }
 
+  const createSampleFlow = async () => {
+    const confirmed = window.confirm(
+      'Create the Sample Critical Chain Project?\n\n' +
+      'This will create a new planner with the predefined A–H activities ' +
+      'and dependencies. Your existing planners will not be changed.'
+    )
+
+    if (!confirmed) return
+
+    const baseName = 'Sample Critical Chain Project'
+
+    const existingNames = new Set(
+      projects.map(project => project.name)
+    )
+
+    let sampleName = baseName
+    let count = 2
+
+    while (existingNames.has(sampleName)) {
+      sampleName = `${baseName} (${count})`
+      count++
+    }
+
+    const next = {
+      ...DEFAULT_PROJECT,
+      name: sampleName,
+    }
+
+    const sampleActivities = SAMPLE.map(activity => ({
+      ...activity,
+      actual_finish: null,
+    }))
+
+    const payload = {
+      ...next,
+      activities: sampleActivities,
+    }
+
+    setLoading(true)
+    setMessage('')
+
+    try {
+      const response = await fetch(`${API}/api/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const body = await response.json()
+
+      if (!response.ok) {
+        throw new Error(parseError(body))
+      }
+
+      if (body.id == null) {
+        throw new Error('The API did not return the new project ID.')
+      }
+
+    // Open the newly created sample only after successful creation.
+      setProjectId(body.id)
+      setProject({
+        ...next,
+        name: body.name || next.name,
+      })
+
+      setNodes(makeActivityNodes(sampleActivities))
+      setEdges(makeEdges(sampleActivities))
+
+      setResult(null)
+      setSelectedId(null)
+      setPage('canvas')
+      setStatus('Sample planner created')
+      setMessage('')
+
+      await loadProjects()
+    } catch (error) {
+      setMessage(`Could not create sample planner: ${error.message}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Delete a workflow from the backend and refresh the planner list.
   const deletePlanner = async planner => {
     const confirmed = window.confirm(
@@ -778,6 +862,7 @@ function AppInner() {
             loadProjects={loadProjects}
             openPlanner={openPlanner}
             onDeletePlanner={deletePlanner}
+            createSampleFlow={createSampleFlow}
           />
         )}
 

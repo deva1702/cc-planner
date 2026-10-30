@@ -1882,3 +1882,35 @@ button:disabled {
   color: #383c42;
   font-weight: 600;
 }
+
+.list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sample-flow-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #d9dce1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #34383f;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sample-flow-button:hover {
+  background: #f7f8fa;
+  border-color: #bfc4cc;
+}
+
+.sample-flow-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
