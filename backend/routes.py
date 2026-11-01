@@ -4,7 +4,7 @@
 import json
 import logging
 from collections import deque
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -47,6 +47,7 @@ router = APIRouter(prefix="/api", tags=["Scheduling and Projects"])
 class ActivityInput(BaseModel):
     """Activity data accepted by the scheduling endpoint."""
 
+    # Reject unexpected fields instead of silently accepting extra input.
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(min_length=1, max_length=MAX_ID_LENGTH)
@@ -59,6 +60,7 @@ class ActivityInput(BaseModel):
     @field_validator("id")
     @classmethod
     def validate_id(cls, value: str) -> str:
+        # Normalize whitespace before checking that the ID is not blank.
         value = value.strip()
         if not value:
             raise ValueError("Activity ID cannot be blank.")
@@ -75,6 +77,7 @@ class ActivityInput(BaseModel):
     @field_validator("predecessors")
     @classmethod
     def validate_predecessors(cls, value: list[str]) -> list[str]:
+        # Normalize predecessor IDs so whitespace does not affect matching.
         result = []
         for predecessor in value:
             if not predecessor.strip():
@@ -103,6 +106,7 @@ class ScheduleRequest(BaseModel):
     buffer_percent: float = Field(ge=0, le=100)
     holidays: list[date] = Field(default_factory=list, max_length=MAX_HOLIDAYS)
 
+    # Run cross-field and activity-network checks after individual fields validate.
     @model_validator(mode="after")
     def validate_schedule(self):
         _validate_project_dates(self.project_start, self.delivery_date)
@@ -119,8 +123,31 @@ class ProjectActivityInput(ActivityInput):
     node_type: Literal["activity", "buffer"] = "activity"
 
 
+class ImportMetadataInput(BaseModel):
+    """Metadata describing the source of an imported workflow."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source_filename: str = Field(min_length=1, max_length=255)
+    file_type: Literal["xlsx", "csv"]
+    imported_at: datetime
+    activity_count: int = Field(ge=1, le=MAX_ACTIVITIES, strict=True)
+    import_status: Literal["success"] = "success"
+
+    @field_validator("source_filename")
+    @classmethod
+    def validate_source_filename(cls, value: str) -> str:
+        value = value.strip()
+        if not value or value in {".", ".."}:
+            raise ValueError("Source filename is invalid.")
+        # Accept only a filename, not a path supplied by the client.
+        if "/" in value or "\\" in value:
+            raise ValueError("Source filename must not contain a path.")
+        return value
+
+
 class ProjectInput(BaseModel):
-    """Complete project settings and activity network."""
+    """Complete project settings, activity network, and optional import metadata."""
 
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
@@ -132,6 +159,7 @@ class ProjectInput(BaseModel):
     activities: list[ProjectActivityInput] = Field(
         default_factory=list, max_length=MAX_ACTIVITIES
     )
+    import_metadata: ImportMetadataInput | None = None
 
     @field_validator("name")
     @classmethod
@@ -146,6 +174,8 @@ class ProjectInput(BaseModel):
         _validate_project_dates(self.project_start, self.delivery_date)
         _validate_holidays(self.holidays)
         _validate_activity_network(self.activities)
+
+
         return self
 
 
@@ -170,6 +200,7 @@ def _validate_project_dates(start: date, delivery: date) -> None:
 
 
 def _validate_holidays(holidays: list[date]) -> None:
+    # Duplicate dates could otherwise be counted more than once.
     if len(holidays) != len(set(holidays)):
         raise ValueError("Duplicate holidays are not allowed.")
 
@@ -184,6 +215,7 @@ def _validate_activity_network(activities) -> None:
     if len(ids) != len(set(ids)):
         raise ValueError("Activity IDs must be unique within a project.")
 
+    # Build an adjacency list and indegree count for the dependency graph.
     known_ids = set(ids)
     successors = {activity_id: [] for activity_id in ids}
     indegree = {activity_id: 0 for activity_id in ids}
@@ -220,6 +252,7 @@ def _validate_activity_network(activities) -> None:
             indegree[activity.id] += 1
 
     # Kahn's algorithm detects cycles in O(V + E) time.
+    # Start with activities that have no predecessors.
     queue = deque(
         activity_id
         for activity_id, degree in indegree.items()
@@ -231,17 +264,20 @@ def _validate_activity_network(activities) -> None:
         current = queue.popleft()
         visited += 1
 
+        # Remove the current activity's outgoing edges from the graph.
         for successor in successors[current]:
             indegree[successor] -= 1
             if indegree[successor] == 0:
                 queue.append(successor)
 
+    # If some activities remain unvisited, the graph contains a cycle.
     if visited != len(ids):
         raise ValueError("Dependency cycle detected.")
 
 
 def _handle_database_error(exc: SQLAlchemyError) -> NoReturn:
     """Log database details internally and raise a safe API error."""
+    # Keep internal database details in server logs, not in the API response.
     logger.exception("Database operation failed")
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -259,6 +295,7 @@ def calculate_schedule_endpoint(
 ) -> dict:
     """Calculate a schedule without persisting it."""
     try:
+        # Convert validated activity models into dictionaries for the engine.
         return calculate_schedule(
             activities=[
                 activity.model_dump()
@@ -270,6 +307,7 @@ def calculate_schedule_endpoint(
             holidays=payload.holidays,
         )
     except ValueError as exc:
+        # Return scheduling validation errors as HTTP 422 responses.
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(exc),
@@ -282,6 +320,9 @@ def calculate_schedule_endpoint(
 
 def _load_project(db: Session, project_id: int) -> Project:
     """Load a project and refresh its activity dependency relationships."""
+
+    # Eagerly load activities and their predecessor links to avoid
+    # additional database queries while building the project response.
     statement = (
         select(Project)
         .where(Project.id == project_id)
@@ -308,6 +349,8 @@ def _project_response(project: Project) -> dict:
     """Serialize a project without exposing database implementation details."""
     activities = list(project.activities)
 
+    # Translate database activity IDs back to the activity codes
+    # expected by the API and frontend.
     code_by_id = {
         activity.id: activity.activity_code
         for activity in activities
@@ -320,6 +363,11 @@ def _project_response(project: Project) -> dict:
         "delivery_date": project.delivery_date,
         "buffer_percent": project.buffer_percent,
         "holidays": json.loads(project.holidays),
+        "import_metadata": (
+            json.loads(project.import_metadata)
+            if project.import_metadata
+            else None
+        ),
         "created_at": project.created_at,
         "updated_at": project.updated_at,
         "activities": [
@@ -329,6 +377,7 @@ def _project_response(project: Project) -> dict:
                 "shop": activity.shop,
                 "duration": activity.duration,
                 "actual_finish": activity.actual_finish,
+                # Convert predecessor database IDs into activity codes.
                 "predecessors": sorted(
                     code_by_id[link.source_activity_id]
                     for link in activity.predecessor_links
@@ -369,13 +418,16 @@ def _replace_activities(
     ]
 
     db.add_all(records)
+    # Flush to generate database IDs before creating dependency records.
     db.flush()
 
+    # Map activity codes to their newly generated database IDs.
     activity_by_code = {
         activity.activity_code: activity
         for activity in records
     }
 
+    # Rebuild dependency edges using the new activity database IDs.
     dependencies = [
         Dependency(
             source_activity_id=activity_by_code[predecessor].id,
@@ -407,17 +459,25 @@ def create_project(
         project_start=payload.project_start,
         delivery_date=payload.delivery_date,
         buffer_percent=payload.buffer_percent,
+        #store holiday dates as JSON-encoded ISO date strings.
         holidays=json.dumps(
             [day.isoformat() for day in payload.holidays]
+        ),
+        import_metadata=(
+            payload.import_metadata.model_dump_json()
+            if payload.import_metadata is not None
+            else None
         ),
     )
 
     try:
         db.add(project)
+        # Flush to obtain the generated project ID before saving activities.
         db.flush()
 
         _replace_activities(db, project, payload.activities)
 
+        # Commit the project, activities and dependencies together.
         db.commit()
 
         # Reload after commit so the response contains persisted activities
@@ -438,6 +498,8 @@ def list_projects(
     db: Session = Depends(get_db),
 ) -> list[dict]:
     """List project summaries without loading every activity."""
+
+    # Return lightweight project summaries rather than loading full networks.
     projects = db.scalars(
         select(Project).order_by(
             Project.updated_at.desc(),
@@ -485,6 +547,15 @@ def update_project(
         project.holidays = json.dumps(
             [day.isoformat() for day in payload.holidays]
         )
+
+        # Omitted metadata means an ordinary save: preserve the existing value.
+        # Explicit null clears it; an object replaces it with the new import.
+        if "import_metadata" in payload.model_fields_set:
+            project.import_metadata = (
+                payload.import_metadata.model_dump_json()
+                if payload.import_metadata is not None
+                else None
+            )
 
         _replace_activities(db, project, payload.activities)
         db.commit()

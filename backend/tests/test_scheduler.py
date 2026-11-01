@@ -462,7 +462,7 @@ def test_working_day_offset_boundaries():
         cal.date_at(MAX_WORKING_OFFSET + 1)
     for bad in (-1, True, 1.5, "3", None):
         with pytest.raises(ValueError):
-            cal.date_at(bad)
+            cal.date_at(bad) # type: ignore[arg-type]
 
 
 def test_activity_finish_past_supported_range_gives_clear_error():

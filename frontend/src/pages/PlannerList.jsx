@@ -93,6 +93,7 @@ export default function PlannerList({
             role="button"
             tabIndex={0}
             onClick={() => openPlanner(planner.id)}
+            // Allow opening a planner with Enter or Space when the row itself has focus.
             onKeyDown={event => {
               if (
                 event.target === event.currentTarget &&
@@ -138,6 +139,7 @@ export default function PlannerList({
                 className="delete-planner-button"
                 title={`Delete ${planner.name}`}
                 aria-label={`Delete ${planner.name}`}
+                // Prevent the row's click handler from opening the planner when deleting it.
                 onClick={event => {
                   event.stopPropagation()
                   onDeletePlanner(planner)
@@ -154,6 +156,7 @@ export default function PlannerList({
           </div>
         ))}
 
+        {/* Show a creation prompt when no saved planners are available. */}
         {!projects.length && (
           <div className="empty-workflows">
             <div className="empty-icon cc-mini">CC</div>

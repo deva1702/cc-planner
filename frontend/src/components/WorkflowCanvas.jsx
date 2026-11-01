@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Background, ReactFlow } from '@xyflow/react'
 import {
   AlertTriangle,
@@ -14,8 +14,10 @@ import {
 } from 'lucide-react'
 
 import CanvasControls from './CanvasControls'
+import ImportExcel from './ImportExcel'
 import CanvasPlaceholder from './CanvasPlaceholder'
 import { fmtDate } from '../utils'
+import DeletableEdge from './DeletableEdge'
 
 export default function WorkflowCanvas({
   setPage,
@@ -49,6 +51,8 @@ export default function WorkflowCanvas({
   setResult,
   setStatus,
   nodeTypes,
+  onImportActivities,
+  importMetadata,
 }) {
   const [activeSummaryTab, setActiveSummaryTab] = useState('critical')
   const [summaryHeight, setSummaryHeight] = useState(215)
@@ -56,17 +60,29 @@ export default function WorkflowCanvas({
   const [isResizing, setIsResizing] = useState(false)
   const resizeStart = useRef(null)
 
+// Keep the custom edge type mapping stable between renders.
+const edgeTypes = useMemo(
+  () => ({
+    deletable: DeletableEdge,
+  }),
+  []
+)
+
   // Track the drag on window so resizing continues even when the pointer
   // moves outside the narrow divider.
+  // Record the initial pointer position and panel height to calculate resizing.
   const handleResizeStart = event => {
     if (summaryCollapsed || event.button !== 0) return
+
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
+
     resizeStart.current = {
       pointerId: event.pointerId,
       pointerY: event.clientY,
       height: summaryHeight,
     }
+
     setIsResizing(true)
   }
 
@@ -75,9 +91,11 @@ export default function WorkflowCanvas({
 
     const handlePointerMove = event => {
       const start = resizeStart.current
+
       if (!start || event.pointerId !== start.pointerId) return
 
       const delta = start.pointerY - event.clientY
+
       setSummaryHeight(
         Math.min(420, Math.max(110, start.height + delta))
       )
@@ -85,9 +103,14 @@ export default function WorkflowCanvas({
 
     const stopResizing = event => {
       const start = resizeStart.current
-      if (!start || (event.pointerId != null && event.pointerId !== start.pointerId)) {
+
+      if (
+        !start ||
+        (event.pointerId != null && event.pointerId !== start.pointerId)
+      ) {
         return
       }
+
       resizeStart.current = null
       setIsResizing(false)
     }
@@ -102,14 +125,42 @@ export default function WorkflowCanvas({
       window.removeEventListener('pointercancel', stopResizing)
     }
   }, [isResizing])
+
   const scheduledActivities = result?.activities || []
 
+  // Create an ID-based lookup to retrieve calculated dates for each activity.
   const scheduleById = new Map(
     scheduledActivities.map(activity => [
       String(activity.id),
       activity,
     ])
   )
+
+  const orderedActivities = useMemo(() => {
+    const remaining = new Set(
+      activities.map(activity => String(activity.id))
+    )
+
+    const ordered = []
+
+    while (remaining.size) {
+      const next = activities.find(activity =>
+        remaining.has(String(activity.id)) &&
+        (activity.predecessors || []).every(
+          predecessor => !remaining.has(String(predecessor))
+        )
+      )
+
+      // Preserve the original order if dependencies cannot be resolved.
+      if (!next) return activities
+
+      ordered.push(next)
+      remaining.delete(String(next.id))
+    }
+
+    return ordered
+  }, [activities])
+
   return (
     <>
       <header className="editor-topbar">
@@ -237,6 +288,13 @@ export default function WorkflowCanvas({
 
         <div className="toolbar-spacer" />
 
+        <ImportExcel
+          loading={loading}
+          importMetadata={importMetadata}
+          onImportActivities={onImportActivities}
+        />
+
+
         <button
           className="outline-button add-node-button"
           onClick={addActivity}
@@ -255,6 +313,7 @@ export default function WorkflowCanvas({
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={changes => {
             onNodesChange(changes)
 
@@ -275,6 +334,7 @@ export default function WorkflowCanvas({
               setNodes(current =>
                 current.filter(node => node.type !== 'buffer')
               )
+
               setResult(null)
               setStatus('Unsaved changes')
             }
@@ -334,6 +394,7 @@ export default function WorkflowCanvas({
               Activity name
               <input
                 value={selectedNode.data.name || ''}
+                maxLength={200}
                 onChange={event =>
                   updateNode('name', event.target.value)
                 }
@@ -344,6 +405,7 @@ export default function WorkflowCanvas({
               Shop / component
               <input
                 value={selectedNode.data.shop || ''}
+                maxLength={100}
                 onChange={event =>
                   updateNode('shop', event.target.value)
                 }
@@ -414,6 +476,7 @@ export default function WorkflowCanvas({
               event.preventDefault()
               setSummaryHeight(height => Math.min(420, height + 15))
             }
+
             if (event.key === 'ArrowDown') {
               event.preventDefault()
               setSummaryHeight(height => Math.max(110, height - 15))
@@ -426,186 +489,224 @@ export default function WorkflowCanvas({
 
       <div className="summary-tabs">
         <button
-          className={activeSummaryTab === 'critical' ? 'primary-button compact' : 'outline-button'}
+          className={
+            activeSummaryTab === 'critical'
+              ? 'primary-button compact'
+              : 'outline-button'
+          }
           onClick={() => setActiveSummaryTab('critical')}
           type="button"
         >
           Critical Chain Summary
         </button>
+
         <button
-          className={activeSummaryTab === 'activities' ? 'primary-button compact' : 'outline-button'}
+          className={
+            activeSummaryTab === 'activities'
+              ? 'primary-button compact'
+              : 'outline-button'
+          }
           onClick={() => setActiveSummaryTab('activities')}
           type="button"
         >
           Activity Schedule
         </button>
+
         <div className="summary-tabs-spacer" />
+
         <button
           className="summary-collapse-button"
           type="button"
-          onClick={() => setSummaryCollapsed(collapsed => !collapsed)}
-          aria-label={summaryCollapsed ? 'Expand bottom results panel' : 'Collapse bottom results panel'}
-          title={summaryCollapsed ? 'Expand results' : 'Collapse results'}
+          onClick={() =>
+            setSummaryCollapsed(collapsed => !collapsed)
+          }
+          aria-label={
+            summaryCollapsed
+              ? 'Expand bottom results panel'
+              : 'Collapse bottom results panel'
+          }
+          title={
+            summaryCollapsed ? 'Expand results' : 'Collapse results'
+          }
         >
-          {summaryCollapsed ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+          {summaryCollapsed
+            ? <ChevronUp size={15} />
+            : <ChevronDown size={15} />}
         </button>
       </div>
-
-      <div
-        className={`summary-layout${summaryCollapsed ? ' is-collapsed' : ''}`}
-        style={{ height: summaryCollapsed ? 0 : `${summaryHeight}px` }}
+          <div
+        className={`summary-layout${
+          summaryCollapsed ? ' is-collapsed' : ''
+        }`}
+        style={{
+          height: summaryCollapsed ? 0 : `${summaryHeight}px`,
+        }}
       >
-  {/* Existing Critical Chain Summary */}
-  <section className="summary-panel" hidden={activeSummaryTab !== 'critical'}>
-    <div className="summary-panel-head">
-      <div>
-        <h2>Critical Chain Summary</h2>
-        <span>
-          {result
-            ? 'Calculated from current workflow'
-            : 'Calculate dates to populate the summary'}
-        </span>
-      </div>
+        {/* Existing Critical Chain Summary */}
+        <section
+          className="summary-panel"
+          hidden={activeSummaryTab !== 'critical'}
+        >
+          <div className="summary-panel-head">
+            <div>
+              <h2>Critical Chain Summary</h2>
+              <span>
+                {result
+                  ? 'Calculated from current workflow'
+                  : 'Calculate dates to populate the summary'}
+              </span>
+            </div>
 
-      <div className="delivery-status">
-        {result
-          ? result.buffered_delivery_variance_working_days < 0
-            ? <>
-                <span className="status-pill early">Early</span>
-                {Math.abs(
-                  result.buffered_delivery_variance_working_days
-                )} working days early
-              </>
-            : result.buffered_delivery_variance_working_days === 0
-              ? <span className="status-pill ontime">On time</span>
-              : <>
-                  <span className="status-pill late">Late</span>
-                  {result.buffered_delivery_variance_working_days}
-                  {' '}working days late
-                </>
-          : 'Delivery status pending'}
-      </div>
-    </div>
-
-    <div className="summary-table-wrap">
-      <table className="summary-table">
-        <thead>
-          <tr>
-            <th>Metric</th>
-            <th>Excluding Sunday (working days)</th>
-            <th>Including Sunday (calendar days)</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td>CC Days</td>
-            <td>{result?.chain_days ?? '—'}</td>
-            <td>{result?.chain_calendar_days ?? '—'}</td>
-          </tr>
-
-          <tr>
-            <td>Buf Days</td>
-            <td>{result?.buffer_days ?? '—'}</td>
-            <td>{result?.buffer_calendar_days ?? '—'}</td>
-          </tr>
-
-          <tr>
-            <td>Total Days</td>
-            <td>{result?.total_buffered_days ?? '—'}</td>
-            <td>{result?.total_buffered_calendar_days ?? '—'}</td>
-          </tr>
-
-          <tr>
-            <td>Buf / CC</td>
-            <td>
+            <div className="delivery-status">
               {result
-                ? `${result.buffer_percent ?? project.buffer_percent}%`
-                : `${project.buffer_percent}%`}
-            </td>
-            <td>
-              {result
-                ? `${result.buffer_percent ?? project.buffer_percent}%`
-                : `${project.buffer_percent}%`}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                ? result.buffered_delivery_variance_working_days < 0
+                  ? <>
+                      <span className="status-pill early">Early</span>
+                      {Math.abs(
+                        result.buffered_delivery_variance_working_days
+                      )} working days early
+                    </>
+                  : result.buffered_delivery_variance_working_days === 0
+                    ? <span className="status-pill ontime">On time</span>
+                    : <>
+                        <span className="status-pill late">Late</span>
+                        {result.buffered_delivery_variance_working_days}
+                        {' '}working days late
+                      </>
+                : 'Delivery status pending'}
+            </div>
+          </div>
 
-    <div className="summary-footer">
-      <span>
-        Chain finish: <strong>{fmtDate(result?.chain_finish)}</strong>
-      </span>
-      <span>
-        Buffered finish: <strong>{fmtDate(result?.buffered_finish)}</strong>
-      </span>
-      <span>
-        Delivery date: <strong>{fmtDate(project.delivery_date)}</strong>
-      </span>
-    </div>
-  </section>
+          <div className="summary-table-wrap">
+            <table className="summary-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Excluding Sunday (working days)</th>
+                  <th>Including Sunday (calendar days)</th>
+                </tr>
+              </thead>
 
-  {/* New Activity Schedule */}
-  <section className="activity-schedule-panel" hidden={activeSummaryTab !== 'activities'}>
-    <div className="activity-schedule-head">
-      <div>
-        <h2>Activity Schedule</h2>
-        <span>
-          {result
-            ? 'Calculated activity dates'
-            : 'Calculate dates to populate the schedule'}
-        </span>
+              <tbody>
+                <tr>
+                  <td>CC Days</td>
+                  <td>{result?.chain_days ?? '—'}</td>
+                  <td>{result?.chain_calendar_days ?? '—'}</td>
+                </tr>
+
+                <tr>
+                  <td>Buf Days</td>
+                  <td>{result?.buffer_days ?? '—'}</td>
+                  <td>{result?.buffer_calendar_days ?? '—'}</td>
+                </tr>
+
+                <tr>
+                  <td>Total Days</td>
+                  <td>{result?.total_buffered_days ?? '—'}</td>
+                  <td>{result?.total_buffered_calendar_days ?? '—'}</td>
+                </tr>
+
+                <tr>
+                  <td>Buf / CC</td>
+                  <td>
+                    {result
+                      ? `${result.buffer_percent ?? project.buffer_percent}%`
+                      : `${project.buffer_percent}%`}
+                  </td>
+                  <td>
+                    {result
+                      ? `${result.buffer_percent ?? project.buffer_percent}%`
+                      : `${project.buffer_percent}%`}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="summary-footer">
+            <span>
+              Chain finish: <strong>{fmtDate(result?.chain_finish)}</strong>
+            </span>
+
+            <span>
+              Buffered finish:{' '}
+              <strong>{fmtDate(result?.buffered_finish)}</strong>
+            </span>
+
+            <span>
+              Delivery date:{' '}
+              <strong>{fmtDate(project.delivery_date)}</strong>
+            </span>
+          </div>
+        </section>
+
+        {/* Existing Activity Schedule */}
+        <section
+          className="activity-schedule-panel"
+          hidden={activeSummaryTab !== 'activities'}
+        >
+          <div className="activity-schedule-head">
+            <div>
+              <h2>Activity Schedule</h2>
+              <span>
+                {result
+                  ? 'Calculated activity dates'
+                  : 'Calculate dates to populate the schedule'}
+              </span>
+            </div>
+          </div>
+
+          <div className="activity-schedule-table-wrap">
+            <table className="activity-schedule-table">
+              <thead>
+                <tr>
+                  <th>Activity ID</th>
+                  <th>Activity Name</th>
+                  <th>Shop</th>
+                  <th>Duration (Days)</th>
+                  <th>Start Date</th>
+                  <th>Finish Date</th>
+                  <th>Predecessors</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {orderedActivities.map(activity => {
+                  const scheduled = scheduleById.get(
+                    String(activity.id)
+                  )
+
+                  return (
+                    <tr key={activity.id}>
+                      <td className="schedule-activity-id">
+                        {activity.id}
+                      </td>
+                      <td>{activity.name || 'Untitled activity'}</td>
+                      <td>{activity.shop || '—'}</td>
+                      <td>{activity.duration ?? '—'}</td>
+                      <td>{fmtDate(scheduled?.planned_start)}</td>
+                      <td>{fmtDate(scheduled?.planned_finish)}</td>
+                      <td>
+                        {activity.predecessors?.length
+                          ? activity.predecessors.join(', ')
+                          : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+
+                {!activities.length && (
+                  <tr>
+                    <td colSpan={7} className="schedule-empty">
+                      No activities added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </div>
-
-    <div className="activity-schedule-table-wrap">
-      <table className="activity-schedule-table">
-        <thead>
-          <tr>
-            <th>Activity ID</th>
-            <th>Activity Name</th>
-            <th>Shop</th>
-            <th>Duration (Days)</th>
-            <th>Start Date</th>
-            <th>Finish Date</th>
-            <th>Predecessors</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {activities.map(activity => {
-            const scheduled = scheduleById.get(String(activity.id))
-
-            return (
-              <tr key={activity.id}>
-                <td className="schedule-activity-id">{activity.id}</td>
-                <td>{activity.name || 'Untitled activity'}</td>
-                <td>{activity.shop || '—'}</td>
-                <td>{activity.duration ?? '—'}</td>
-                <td>{fmtDate(scheduled?.planned_start)}</td>
-                <td>{fmtDate(scheduled?.planned_finish)}</td>
-                <td>
-                  {activity.predecessors?.length
-                    ? activity.predecessors.join(', ')
-                    : '—'}
-                </td>
-              </tr>
-            )
-          })}
-
-          {!activities.length && (
-            <tr>
-              <td colSpan={7} className="schedule-empty">
-                No activities added yet.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  </section>
-</div>
     </>
   )
 }

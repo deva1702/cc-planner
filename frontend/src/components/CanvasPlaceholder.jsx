@@ -12,6 +12,7 @@ export default function CanvasPlaceholder({ onAdd }) {
         <Plus size={29} />
       </button>
 
+    {/* Prompt the user to create the first activity in an empty canvas. */}
       <span>Add first step...</span>
     </div>
   )

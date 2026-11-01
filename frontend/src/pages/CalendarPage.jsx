@@ -107,6 +107,7 @@ export default function CalendarPage({
 
           <div className="calendar-days">
             {calendarCells.map(cell => {
+              // Check whether this date is included in the planner's custom holidays.
               const custom = project.holidays.includes(cell.key)
 
               return (
@@ -117,6 +118,7 @@ export default function CalendarPage({
                   } ${cell.sunday ? 'sunday' : ''} ${
                     custom ? 'custom-holiday' : ''
                   }`}
+                  // Sundays are fixed non-working days; other dates toggle custom holiday status.
                   onClick={() => {
                     if (cell.sunday) return
 
@@ -190,6 +192,7 @@ export default function CalendarPage({
               await addHoliday(holidayDraft)
               setHolidayDraft('')
             }}
+            // Prevent adding empty, duplicate, or Sunday holiday dates.
             disabled={
               !holidayDraft ||
               project.holidays.includes(holidayDraft) ||
@@ -199,7 +202,7 @@ export default function CalendarPage({
             <Plus size={15} />
             Add holiday
           </button>
-
+          {/*Display saved custom holidays with an option to remove each one.*/}
           <div className="custom-holiday-list">
             <h3>
               Custom holidays

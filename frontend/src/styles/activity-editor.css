@@ -1,0 +1,113 @@
+
+.node-editor-panel {
+  position: absolute;
+  z-index: 10;
+  right: 16px;
+  top: 118px;
+  width: 280px;
+  background: #fff;
+  border: 1px solid #dedfe2;
+  border-radius: 6px;
+  box-shadow: 0 8px 25px #00000012;
+  padding: 14px;
+}
+
+.node-editor-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.node-editor-title > div {
+  display: grid;
+  gap: 5px;
+}
+
+.node-editor-title strong {
+  font-size: 12px;
+}
+
+.node-editor-title small {
+  font-size: 9px;
+  color: #888d93;
+}
+
+.node-fields {
+  display: grid;
+  gap: 11px;
+  padding: 13px 0;
+}
+
+.node-fields label,
+.add-holiday-label {
+  display: grid;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 600;
+  color: #696e74;
+}
+
+.node-fields input,
+.add-holiday-label input {
+  width: 100%;
+  border: 1px solid #dfe0e2;
+  border-radius: 3px;
+  padding: 7px 8px;
+  font-size: 10px;
+  color: #333;
+  background: #fff;
+}
+
+.node-fields input:disabled {
+  background: #f6f6f6;
+  color: #8b8f95;
+}
+
+.node-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.danger-button {
+  background: #fff;
+  border-color: #f1c8ca;
+  color: #bf4247;
+  padding: 7px 9px;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  border: 1px solid #f0d5ad;
+  background: #fff9ef;
+  color: #855c2d;
+  border-radius: 4px;
+  font-size: 10px;
+  margin-bottom: 15px;
+}
+
+.notice span {
+  flex: 1;
+}
+
+.notice button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+}
+
+.editor-notice {
+  margin: 7px 15px;
+}
+
+/* Calendar */

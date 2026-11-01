@@ -1,17 +1,27 @@
-
+// Use the configured backend URL, falling back to the local FastAPI server.
 export const API = (
   import.meta.env.VITE_API_BASE_URL ||
   'http://127.0.0.1:8000'
 ).replace(/\/$/, '')
 
-export const DEFAULT_PROJECT = {
-  name: 'Untitled planner',
-  project_start: '2026-11-02',
-  delivery_date: '2027-01-15',
-  buffer_percent: 25,
-  holidays: [],
+// Initialize a new planner with today's start date and a delivery date 30 days later.
+export const createDefaultProject = () => {
+  const today = new Date()
+  const deliveryDate = new Date(today)
+
+  deliveryDate.setDate(deliveryDate.getDate() + 30)
+
+  return {
+    name: 'Untitled planner',
+    project_start: dateKey(today),
+    delivery_date: dateKey(deliveryDate),
+    buffer_percent: 25,
+    holidays: [],
+    import_metadata: null,
+  }
 }
 
+// Provide a predefined workflow for demonstrating dependencies and scheduling.
 export const SAMPLE = [
   {
     id: 'A',
@@ -104,6 +114,7 @@ export const fmtDate = value =>
       })
     : '—'
 
+// Convert a Date into YYYY-MM-DD format for API requests and date storage.
 export const dateKey = date =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
     date.getDate()

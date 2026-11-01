@@ -1,0 +1,125 @@
+/*EXCEL / CSV IMPORT*/
+/*===================================================== */
+
+.import-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-color: #b8d9c5;
+  color: #267448;
+  background: #f4faf6;
+  white-space: nowrap;
+}
+
+.import-button:hover:not(:disabled) {
+  border-color: #83bd98;
+  background: #eaf6ee;
+  color: #1d633b;
+}
+
+.import-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.import-popover {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 100;
+  width: 290px;
+  padding: 16px;
+  border: 1px solid #dfe5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 28px rgba(24, 39, 31, 0.13);
+  color: #252a27;
+}
+
+.import-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 9px;
+  color: #267448;
+  font-size: 14px;
+}
+
+.import-popover-title strong {
+  color: #252a27;
+  font-weight: 600;
+}
+
+.import-popover p {
+  margin: 0 0 14px;
+  color: #68716b;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.import-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 9px 10px;
+  border: 1px solid #dcebe1;
+  border-radius: 7px;
+  background: #f5faf6;
+  overflow: hidden;
+}
+
+.import-file-info strong {
+  overflow: hidden;
+  color: #315b40;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-file-info span {
+  color: #718078;
+  font-size: 11px;
+}
+
+.import-select-button {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #267448;
+  border-color: #267448;
+}
+
+.import-select-button:hover:not(:disabled) {
+  background: #1d633b;
+  border-color: #1d633b;
+}
+
+.import-select-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 650px) {
+  .import-popover {
+    right: -65px;
+    width: min(290px, calc(100vw - 32px));
+  }
+
+  .import-button {
+    gap: 5px;
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+}

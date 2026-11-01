@@ -1,5 +1,4 @@
 
-
 """Database models for projects, activities, and dependencies."""
 
 from datetime import date, datetime, timezone
@@ -31,10 +30,19 @@ class Project(Base):
     buffer_percent: Mapped[float] = mapped_column(
         Float, nullable=False, default=25.0
     )
+
     # JSON-encoded ISO dates; decoded and validated by the API.
     holidays: Mapped[str] = mapped_column(
         Text, nullable=False, default="[]"
     )
+
+    # Nullable JSON metadata for Excel/CSV imports.
+    # The original spreadsheet file is never stored.
+    import_metadata: Mapped[str | None] = mapped_column(
+        Text, nullable=True, default=None
+    )
+
+    # Store timestamps in UTC for consistent project tracking.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -47,6 +55,7 @@ class Project(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    # A project owns its activities; deleting the project also removes them.
     activities: Mapped[list["Activity"]] = relationship(
         back_populates="project",
         cascade="all, delete-orphan",
@@ -59,6 +68,7 @@ class Activity(Base):
     """An activity and its position in the planning canvas."""
 
     __tablename__ = "activities"
+    # Activity codes must be unique within a project, not globally.
     __table_args__ = (
         UniqueConstraint(
             "project_id",
@@ -79,6 +89,7 @@ class Activity(Base):
     duration: Mapped[int] = mapped_column(Integer, nullable=False)
     actual_finish: Mapped[date | None] = mapped_column(Date, nullable=True)
 
+    # Persist canvas coordinates so activity positions are restored when loaded.
     position_x: Mapped[float] = mapped_column(
         Float, nullable=False, default=0.0
     )
@@ -89,14 +100,17 @@ class Activity(Base):
         String(50), nullable=False, default="activity"
     )
 
+    # Link each activity back to its parent project.
     project: Mapped["Project"] = relationship(back_populates="activities")
 
+    # Incoming dependency links identify this activity's predecessors.
     predecessor_links: Mapped[list["Dependency"]] = relationship(
         back_populates="target",
         foreign_keys="Dependency.target_activity_id",
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    # Outgoing dependency links identify this activity's successors.
     successor_links: Mapped[list["Dependency"]] = relationship(
         back_populates="source",
         foreign_keys="Dependency.source_activity_id",
@@ -109,6 +123,7 @@ class Dependency(Base):
     """A directed edge from a predecessor to a successor activity."""
 
     __tablename__ = "dependencies"
+     # Prevent duplicate connections between the same pair of activities.
     __table_args__ = (
         UniqueConstraint(
             "source_activity_id",
@@ -129,10 +144,12 @@ class Dependency(Base):
         index=True,
     )
 
+    # The source activity is the predecessor in the directed connection
     source: Mapped["Activity"] = relationship(
         back_populates="successor_links",
         foreign_keys=[source_activity_id],
     )
+    # The target activity is the successor in the directed connection.
     target: Mapped["Activity"] = relationship(
         back_populates="predecessor_links",
         foreign_keys=[target_activity_id],

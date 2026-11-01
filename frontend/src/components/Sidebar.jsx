@@ -18,9 +18,6 @@ export default function Sidebar({
       >
         <span className="cc-logo">CC</span>
         <strong>Planner</strong>
-        <span className="brand-plus">
-          <Plus size={15} />
-        </span>
       </button>
 
       <div className="sidebar-primary">
@@ -43,6 +40,7 @@ export default function Sidebar({
               : 'side-link'
           }
           onClick={() => {
+            // Prevent calendar editing when no saved planner is selected.
             if (!projectId && page !== 'planner-list') {
               setMessage(
                 'Save or open a planner before editing its calendar.'
@@ -69,6 +67,7 @@ export default function Sidebar({
         </button>
       </div>
 
+      {/* Display saved planners and highlight the currently open planner. */}
       <div className="planner-nav-list">
         {projects.map(planner => (
           <button

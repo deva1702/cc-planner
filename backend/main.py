@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from database import Base, engine
+from database import Base, engine, migrate_import_metadata
 import models  # noqa: F401 - registers SQLAlchemy model metadata
 from routes import router
 
@@ -20,13 +20,13 @@ from routes import router
 # ---------------------------------------------------------------------------
 # Logging configuration
 # ---------------------------------------------------------------------------
-
+# Create the log directory if it does not already exist.
 LOG_DIR = Path(__file__).resolve().parent / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 LOG_FILE = LOG_DIR / "api_requests.log"
 
-
+# Include request-specific fields when they are attached to the log record.
 class JSONFormatter(logging.Formatter):
     """Format each log event as a single JSON line for log ingestion."""
 
@@ -38,6 +38,7 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
+        # Include request-specific fields when they are attached to the log record.
         for field in (
             "method",
             "path",
@@ -52,7 +53,7 @@ class JSONFormatter(logging.Formatter):
 
         return json.dumps(entry)
 
-
+# Rotate logs after 5 MB and retain up to five backup files.
 file_handler = RotatingFileHandler(
     LOG_FILE,
     maxBytes=5 * 1024 * 1024,
@@ -71,8 +72,9 @@ logger.propagate = False
 # ---------------------------------------------------------------------------
 # Database initialization
 # ---------------------------------------------------------------------------
-
+# Create missing tables, then apply the import_metadata migration.
 Base.metadata.create_all(bind=engine)
+migrate_import_metadata()
 
 
 # ---------------------------------------------------------------------------
@@ -89,12 +91,14 @@ app = FastAPI(
 # ---------------------------------------------------------------------------
 # CORS configuration
 # ---------------------------------------------------------------------------
-
+# Allow requests from the local Vite development and preview servers.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "http://localhost:4173",
+        "http://127.0.0.1:4173",
     ],
     allow_credentials=False,
     allow_methods=[
@@ -113,7 +117,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Security headers
 # ---------------------------------------------------------------------------
-
+# Add security-related headers to outgoing API responses.
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
@@ -129,7 +133,7 @@ async def add_security_headers(request: Request, call_next):
 # ---------------------------------------------------------------------------
 # API request logging middleware
 # ---------------------------------------------------------------------------
-
+# Measure request duration and record the response status or exception.
 @app.middleware("http")
 async def log_api_requests(request: Request, call_next):
     start_time = time.perf_counter()

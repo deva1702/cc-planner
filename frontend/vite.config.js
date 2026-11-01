@@ -23,7 +23,15 @@ const securityHeaders = {
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
+    fs: {
+      strict: true,
+    },
+    headers: securityHeaders,
+  },
+
+  preview: {
     headers: securityHeaders,
   },
 })
