@@ -1,0 +1,9 @@
+﻿Activity ID,Activity Name,Shop Name,Duration (Days),Predecessor(s),Actual Finish
+A,Material receipt – Bottom Dish End,Purchase,30,,
+B,Dish End petal welding,TM5A,10,A,
+C,Material receipt – Shell,Purchase,25,,
+D,Shell welding,TM4B,12,C,
+E,Shell + Dish End assembly,TM5A,8,"B, D",
+F,Hydrotest,TM5A,5,E,
+G,Painting,Paint shop,3,F,
+H,Dispatch,Stores,1,G,
