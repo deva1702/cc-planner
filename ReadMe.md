@@ -184,6 +184,7 @@ Run all backend tests with verbose output:
 
 ```bash
 python -m pytest tests/ -v
+```
 
 ---
 
