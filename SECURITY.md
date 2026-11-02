@@ -1,4 +1,3 @@
-```markdown
 # CC Planner — Security Policy & Assessment Report
 
 ## 1. Executive Summary
@@ -60,4 +59,3 @@ The following protections were verified during the assessment:
 * **Security Headers:** Local frontend and backend responses included `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Referrer-Policy: strict-origin-when-cross-origin`.
 * **Server Information:** The local FastAPI response no longer exposed the `Server` header.
 * **Cache Control:** The local backend response included `Cache-Control: no-store`.
-```

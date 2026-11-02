@@ -1,4 +1,3 @@
-```markdown
 # CC Planner — Critical Chain Project Planner
 
 ## 1. Project Overview
@@ -228,4 +227,3 @@ The calculation engine (`backend/scheduler.py`) is implemented in pure Python:
 - **Strict Input Sanitization:** Pydantic models reject path traversal characters in import metadata and validate string lengths (`MAX_NAME_LENGTH = 200`, `MAX_SHOP_LENGTH = 100`).
 - **HTTP Security Headers:** Frontend and backend enforce `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Cache-Control: no-store`.
 - **Server Cloaking:** Uvicorn runs with `--no-server-header` to prevent server fingerprinting.
-```
