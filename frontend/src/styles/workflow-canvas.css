@@ -228,15 +228,38 @@
   letter-spacing: 0.4px;
 }
 
+
 .node-dates {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 10px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 10px 7px;
   border-top: 1px solid #f0f0f0;
   color: #858990;
   font-size: 8px;
 }
+
+.node-date-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.node-date-label {
+  font-size: 7px;
+  font-weight: 700;
+  color: #777c83;
+  letter-spacing: 0.3px;
+}
+
+.node-date-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 8px;
+  color: #858990;
+}
+
 
 .activity-node .react-flow__handle {
   width: 7px;
@@ -296,15 +319,29 @@
   padding: 7px 10px 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 7px;
   border-top: 1px solid #f3d8c1;
   font-size: 9px;
   color: #9b704f;
 }
 
+.buffer-finish > div {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.buffer-finish span {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #a56b42;
+}
+
 .buffer-finish strong {
   color: #7b4929;
   font-size: 10px;
+  font-weight: 600;
 }
 
 .buffer-node .react-flow__handle {

@@ -570,3 +570,86 @@ def test_random_plans_always_produce_valid_responses():
         r = calculate_schedule(acts, start, start + timedelta(days=rng.randint(0, 300)),
                                rng.choice([0, 10, 25, 33.3, 100]), hol)
         ScheduleResponse.model_validate(r)
+
+
+# ------------------------------------------------ forecast buffer regression tests
+
+def test_delayed_actual_finish_moves_forecast_buffer_only():
+    activities = [
+        {"id": "A", "duration": 2, "actual_finish": "2026-11-06"},
+        {"id": "B", "duration": 2, "predecessors": ["A"]},
+    ]
+
+    r = run(activities)
+
+    # Baseline dates and buffer remain unchanged.
+    assert r["chain_finish"] == "2026-11-05"
+    assert r["buffer_finish"] == "2026-11-06"
+
+    # Actual progress moves the forecast network and its separate buffer.
+    assert r["forecast_finish"] == "2026-11-09"
+    assert r["forecast_buffer_start"] == "2026-11-10"
+    assert r["forecast_buffer_finish"] == "2026-11-10"
+
+
+def test_zero_buffer_forecast_has_no_buffer_start():
+    activities = [
+        {"id": "A", "duration": 1, "actual_finish": "2026-11-04"},
+    ]
+
+    r = run(activities, buffer_percent=0)
+
+    assert r["buffer_days"] == 0
+    assert r["forecast_finish"] == "2026-11-04"
+    assert r["forecast_buffer_start"] is None
+    assert r["forecast_buffer_finish"] == r["forecast_finish"]
+
+
+def test_sunday_actual_finish_moves_successor_to_monday():
+    activities = [
+        {"id": "A", "duration": 1, "actual_finish": "2026-11-08"},
+        {"id": "B", "duration": 1, "predecessors": ["A"]},
+    ]
+
+    r = run(activities)
+    acts = by_id(r)
+
+    assert acts["A"]["actual_finish"] == "2026-11-08"
+    assert acts["B"]["forecast_start"] == "2026-11-09"
+    assert acts["B"]["forecast_finish"] == "2026-11-09"
+    assert r["forecast_finish"] == "2026-11-09"
+
+
+def test_forecast_skips_custom_holiday():
+    activities = [
+        {"id": "A", "duration": 1, "actual_finish": "2026-11-02"},
+        {"id": "B", "duration": 1, "predecessors": ["A"]},
+    ]
+
+    r = run(activities, holidays=["2026-11-03"])
+    acts = by_id(r)
+
+    # Tuesday, 3 November, is a configured holiday.
+    assert acts["B"]["forecast_start"] == "2026-11-04"
+    assert acts["B"]["forecast_finish"] == "2026-11-04"
+
+
+def test_forecast_buffer_supports_more_than_5000_working_days():
+    activities = [
+        {"id": "A", "duration": 3000},
+        {"id": "B", "duration": 3000, "predecessors": ["A"]},
+    ]
+
+    r = run(
+        activities,
+        buffer_percent=100,
+    )
+
+    assert r["chain_days"] == 6000
+    assert r["buffer_days"] == 6000
+    assert r["forecast_finish"] == r["chain_finish"]
+
+    # The same 6,000-day buffer is applied to the forecast.
+    assert r["forecast_buffer_start"] is not None
+    assert r["forecast_buffer_finish"] == r["buffered_finish"]
+    assert r["forecast_buffer_finish"] > r["forecast_finish"]

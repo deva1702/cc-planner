@@ -79,6 +79,7 @@ export default function useSchedule({
             node_type: 'buffer',
             duration: schedule.buffer_days,
             buffered_finish: schedule.buffered_finish,
+            forecast_buffer_finish: schedule.forecast_buffer_finish,
             buffer_percent: schedule.buffer_percent,
           },
         }

@@ -36,12 +36,17 @@ CC Planner consolidates these planning workflows into a unified, interactive bro
 - Directed dependency edge creation with automatic cycle prevention.
 - Dedicated Activity and Project Buffer visual node renderers.
 - In-place sidebar editor for activity IDs, names, durations, shops, and actual finish dates.
+- Delete activity dependencies directly from the canvas.
 
 ### Critical Chain Scheduling Engine
 - Validates network integrity and detects cyclic references using Kahn's algorithm.
 - Computes Early Start (ES), Early Finish (EF), Late Start (LS), and Late Finish (LF) dates.
 - Identifies critical activities and highlights critical dependency edges on the canvas.
 - Dynamically sizes project buffer days and determines buffered finish dates and delivery variance.
+- Tracks activity completion using actual finish dates.
+- Recalculates downstream forecast dates based on actual completion progress.
+- Preserves the original baseline schedule while calculating a separate execution forecast.
+- Validates actual finish dates against predecessor completion dates.
 
 ### Working Calendar
 - Sunday-excluded working calendar calculation.
@@ -57,7 +62,7 @@ CC Planner consolidates these planning workflows into a unified, interactive bro
 ### Schedule Analytics & Summary
 - Resizable schedule summary panel with tabbed navigation:
   - **Critical Chain Summary:** CC days, Buffer days, Total buffered duration, and variance status (Early, On-time, Late).
-  - **Activity Schedule Table:** Calculated planned start and finish dates per activity.
+  - **Activity Schedule Table:** Displays baseline planned dates and current forecast dates for each activity.
 
 ---
 
@@ -174,9 +179,11 @@ uvicorn main:app --reload --no-server-header
 - Interactive Swagger UI: `http://127.0.0.1:8000/docs`
 
 ### Run Test Suite
+
+Run all backend tests with verbose output:
+
 ```bash
-pytest tests/
-```
+python -m pytest tests/ -v
 
 ---
 
@@ -214,10 +221,11 @@ The calculation engine (`backend/scheduler.py`) is implemented in pure Python:
 3. **Working Calendar Construction:** Date math computes working days by skipping Sundays and registered project holidays.
 4. **Forward Pass:** Traverses in topological order to determine Early Start (ES) and Early Finish (EF).
 5. **Backward Pass:** Traverses in reverse topological order to compute Late Start (LS) and Late Finish (LF).
-6. **Total Float & Critical Chain:** Identifies critical activities ($Float = LS - ES = 0$) and critical dependency edges.
-7. **Buffer Sizing:** Calculates project buffer working days:
+6. **Actual Progress & Forecast Calculation:** Uses actual finish dates to update downstream forecast dates while preserving the baseline schedule.
+7. **Total Float & Critical Chain:** Identifies critical activities ($Float = LS - ES = 0$) and critical dependency edges.
+8. **Buffer Sizing:** Calculates project buffer working days:
    $$\text{Buffer Days} = \text{round}\left(\text{Chain Days} \times \frac{\text{Buffer \%}}{100}\right)$$
-8. **Buffered Completion & Variance:** Adds buffer working days to chain finish and computes delivery variance against the target date.
+9. **Buffered Completion & Variance:** Adds buffer working days to chain finish and computes delivery variance against the target date.
 
 ---
 

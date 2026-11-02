@@ -10,7 +10,9 @@ TERMINOLOGY:
   buffer    The baseline project buffer on its own.
   buffered  The baseline critical chain plus its buffer.
 
-The buffer applies to the baseline only, never to the forecast.
+The buffer is calculated from the baseline critical chain.
+The same buffer duration is applied separately after the forecast network finish.
+Baseline dates and buffer calculations never change because of actual progress.
 Sunday and configured holidays are non-working days.
 A task of N days finishes on the Nth working day, counting its start day.
 Variance: negative = early, zero = on time, positive = late (working days).
@@ -434,7 +436,9 @@ def calculate_schedule(
 
     Baseline dates and float never change when actual dates are entered. An
     actual finish earlier than the earliest possible forecast start is rejected.
-    The project buffer applies to the baseline only.
+    The buffer duration is calculated from the baseline critical chain.
+    The same duration is applied separately after the forecast network finish.
+    Baseline dates and buffer calculations never change because of actual progress.
     """
     start = _to_date(project_start, "Project start")
     delivery = _to_date(delivery_date, "Delivery date")
@@ -550,6 +554,18 @@ def calculate_schedule(
 
     forecast_finish = max(finish for _, finish in forecast.values())
 
+    # Apply the original baseline buffer duration after the forecast network finish.
+    # The buffer duration does not get recalculated from forecast progress.
+    if buffer_days > 0:
+        forecast_buffer_start = calendar.after(forecast_finish)
+
+        forecast_buffer_finish = calendar.date_at(
+            calendar.index(forecast_buffer_start) + buffer_days - 1
+        )
+    else:
+        forecast_buffer_start = None
+        forecast_buffer_finish = forecast_finish
+
     return {
         "project_start": start.isoformat(),
         # First working day on or after project_start (they differ if the start
@@ -581,6 +597,11 @@ def calculate_schedule(
             calendar.variance(buffered_finish, delivery),
         # Forecast uses actual progress; the baseline remains unchanged.
         "forecast_finish": forecast_finish.isoformat(),
+        "forecast_buffer_start": (
+                forecast_buffer_start.isoformat()
+                if forecast_buffer_start else None
+        ),
+        "forecast_buffer_finish": forecast_buffer_finish.isoformat(),
         "forecast_delivery_variance_working_days":
             calendar.variance(forecast_finish, delivery),
         # IDs and edges let the React Flow canvas highlight critical elements.

@@ -551,7 +551,7 @@ const edgeTypes = useMemo(
             <div>
               <h2>Critical Chain Summary</h2>
               <span>
-                {result
+                BASELINE PLAN · {result
                   ? 'Calculated from current workflow'
                   : 'Calculate dates to populate the summary'}
               </span>
@@ -638,6 +638,33 @@ const edgeTypes = useMemo(
               <strong>{fmtDate(project.delivery_date)}</strong>
             </span>
           </div>
+          {/* Current forecast based on actual activity progress. */}
+          <div className="forecast-summary">
+            <div className="forecast-summary-heading">
+              <strong>CURRENT FORECAST</strong>
+              <span>Based on actual progress</span>
+            </div>
+
+            <div className="forecast-summary-details">
+              <div>
+                <span>Forecast network finish</span>
+                <strong>{fmtDate(result?.forecast_finish)}</strong>
+              </div>
+
+              <div>
+                <span>Forecast delivery variance</span>
+                <strong>
+                  {result
+                    ? result.forecast_delivery_variance_working_days < 0
+                      ? `${Math.abs(result.forecast_delivery_variance_working_days)} working days early`
+                      : result.forecast_delivery_variance_working_days === 0
+                        ? 'On time'
+                        : `${result.forecast_delivery_variance_working_days} working days late`
+                    : '—'}
+                </strong>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* Existing Activity Schedule */}
@@ -650,7 +677,7 @@ const edgeTypes = useMemo(
               <h2>Activity Schedule</h2>
               <span>
                 {result
-                  ? 'Calculated activity dates'
+                  ? 'Baseline plan and current forecast dates'
                   : 'Calculate dates to populate the schedule'}
               </span>
             </div>
@@ -664,8 +691,10 @@ const edgeTypes = useMemo(
                   <th>Activity Name</th>
                   <th>Shop</th>
                   <th>Duration (Days)</th>
-                  <th>Start Date</th>
-                  <th>Finish Date</th>
+                  <th>Planned Start</th>
+                  <th>Planned Finish</th>
+                  <th>Forecast Start</th>
+                  <th>Forecast Finish</th>
                   <th>Predecessors</th>
                 </tr>
               </thead>
@@ -686,6 +715,8 @@ const edgeTypes = useMemo(
                       <td>{activity.duration ?? '—'}</td>
                       <td>{fmtDate(scheduled?.planned_start)}</td>
                       <td>{fmtDate(scheduled?.planned_finish)}</td>
+                      <td>{fmtDate(scheduled?.forecast_start)}</td>
+                      <td>{fmtDate(scheduled?.forecast_finish)}</td>
                       <td>
                         {activity.predecessors?.length
                           ? activity.predecessors.join(', ')
@@ -697,7 +728,7 @@ const edgeTypes = useMemo(
 
                 {!activities.length && (
                   <tr>
-                    <td colSpan={7} className="schedule-empty">
+                    <td colSpan={9} className="schedule-empty">
                       No activities added yet.
                     </td>
                   </tr>

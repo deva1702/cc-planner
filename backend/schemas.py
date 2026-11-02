@@ -103,10 +103,23 @@ class ScheduleResponse(_Strict):
     buffered_delivery_variance_working_days: int = Field(
         ge=-MAX_VARIANCE, le=MAX_VARIANCE, description="Negative = early, positive = late.")
 
-    # Forecast from actual progress. The buffer is never added to the forecast.
-    forecast_finish: date
+    # Forecast from actual progress, with the baseline buffer applied separately.
+    forecast_finish: date = Field(
+        description="Forecast network finish, excluding the project buffer.")
+
+    forecast_buffer_start: date | None = Field(
+        None,
+        description="Forecast buffer start; None when buffer_days is 0.")
+
+    forecast_buffer_finish: date = Field(
+        description="Forecast finish including the baseline buffer duration. "
+                    "Equals forecast_finish when buffer_days is 0.")
+
     forecast_delivery_variance_working_days: int = Field(
-        ge=-MAX_VARIANCE, le=MAX_VARIANCE, description="Negative = early, positive = late.")
+        ge=-MAX_VARIANCE,
+        le=MAX_VARIANCE,
+        description="Forecast network finish variance against delivery date. "
+                    "Negative = early, positive = late.")
 
     critical_activities: list[str] = Field(max_length=MAX_ACTIVITIES)
     critical_edges: list[CriticalEdge] = Field(max_length=MAX_DEPENDENCIES)
@@ -143,6 +156,34 @@ class ScheduleResponse(_Strict):
                 raise ValueError("buffer_finish must equal buffered_finish.")
             if self.buffer_start <= self.chain_finish:
                 raise ValueError("The buffer must start after the critical chain finishes.")
+
+        # ---- forecast buffer -------------------------------------------------
+        if self.buffer_days == 0:
+            if self.forecast_buffer_start is not None:
+                raise ValueError(
+                    "A zero-day buffer must have null forecast_buffer_start."
+                )
+
+            if self.forecast_buffer_finish != self.forecast_finish:
+                raise ValueError(
+                    "With a zero-day buffer, forecast_buffer_finish "
+                    "must equal forecast_finish."
+                )
+        else:
+            if self.forecast_buffer_start is None:
+                raise ValueError(
+                    "A buffer of 1 or more days needs forecast_buffer_start."
+                )
+
+            if self.forecast_buffer_start <= self.forecast_finish:
+                raise ValueError(
+                    "The forecast buffer must start after forecast_finish."
+                )
+
+            if self.forecast_buffer_finish < self.forecast_buffer_start:
+                raise ValueError(
+                    "forecast_buffer_finish cannot precede forecast_buffer_start."
+                )
 
         # ---- activities and critical lists agree ------------------------------
         ids = [a.id for a in self.activities]
