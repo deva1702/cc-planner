@@ -1,0 +1,196 @@
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: 185px;
+    flex-basis: 185px;
+  }
+
+  .project-toolbar {
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-side-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .calendar-side-panel h2,
+  .calendar-side-panel p,
+  .calendar-legend,
+  .custom-holiday-list {
+    grid-column: 1 / -1;
+  }
+
+  .calendar-day {
+    height: 75px;
+  }
+
+  .editor-status {
+    display: none;
+  }
+}
+
+@media (max-width: 650px) {
+  .sidebar {
+    width: 54px;
+    flex-basis: 54px;
+    padding: 10px 5px;
+  }
+
+  .brand {
+    padding: 0;
+    justify-content: center;
+  }
+
+  .brand strong,
+  .brand-plus,
+  .side-section-head span,
+  .planner-nav-list,
+  .sidebar-bottom,
+  .sidebar-divider {
+    display: none;
+  }
+
+  .side-link {
+    justify-content: center;
+    padding: 12px 0;
+    font-size: 0;
+  }
+
+  .sidebar-primary {
+    margin-top: 20px;
+  }
+
+  .side-link svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .list-page,
+  .calendar-page {
+    padding: 18px 12px;
+  }
+
+  .list-header,
+  .calendar-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .workflow-table-head,
+  .workflow-row {
+    grid-template-columns:
+      minmax(140px, 1.5fr)
+      minmax(80px, 1fr)
+      22px;
+    gap: 8px;
+  }
+
+  .workflow-table-head span:nth-child(3),
+  .workflow-row > span:nth-child(3) {
+    display: none;
+  }
+
+  .editor-topbar {
+    padding: 0 9px;
+    gap: 8px;
+  }
+
+  .editor-status {
+    display: none;
+  }
+
+  .breadcrumb .breadcrumb-name {
+    max-width: 130px;
+  }
+
+  .topbar-actions .outline-button {
+    font-size: 0;
+    padding: 8px;
+  }
+
+  .topbar-actions .outline-button svg {
+    width: 15px;
+  }
+
+  .project-toolbar {
+    padding: 8px;
+    gap: 7px;
+  }
+
+  .project-toolbar label {
+    font-size: 9px;
+  }
+
+  .project-toolbar input {
+    max-width: 118px;
+  }
+
+  .toolbar-spacer {
+    display: none;
+  }
+
+  .workflow-canvas-area {
+    min-height: 220px;
+  }
+
+  .canvas-hint {
+    display: none;
+  }
+
+  .summary-panel {
+    max-height: 260px;
+  }
+
+  .summary-panel-head {
+    align-items: flex-start;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .summary-footer {
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+
+  .summary-table th,
+  .summary-table td {
+    padding: 8px;
+  }
+
+  .node-editor-panel {
+    right: 8px;
+    top: 105px;
+    width: min(270px, calc(100% - 16px));
+  }
+
+  .calendar-actions {
+    flex-wrap: wrap;
+  }
+
+  .calendar-actions > strong {
+    min-width: auto;
+  }
+
+  .calendar-day {
+    height: 58px;
+    padding: 5px;
+  }
+
+  .calendar-day small {
+    font-size: 7px;
+  }
+
+  .calendar-side-panel {
+    display: block;
+  }
+}
+
+
+/* Keep workflow rows clickable while supporting a separate delete action */

@@ -1,0 +1,243 @@
+/*VS CODE-STYLE BOTTOM RESULTS PANEL*/
+/*===================================================== */
+
+.summary-tabs {
+  height: 36px;
+  min-height: 36px;
+  flex: 0 0 36px;
+  display: flex;
+  align-items: stretch;
+  gap: 18px;
+  padding: 0 14px;
+  margin: 0;
+  background: #fff;
+  border-top: 1px solid #dfe1e5;
+  border-bottom: 1px solid #dfe1e5;
+  box-sizing: border-box;
+}
+
+.summary-tabs button,
+.summary-tabs .primary-button.compact,
+.summary-tabs .outline-button {
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  margin: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #777b82;
+  font-size: 11px;
+  font-weight: 500;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.summary-tabs button:hover {
+  color: #25282d;
+  background: #f7f7f8;
+}
+
+.summary-tabs button.primary-button.compact {
+  color: #25282d;
+  background: transparent;
+  border-bottom: 2px solid #555b63;
+  font-weight: 600;
+}
+
+/* Resize divider */
+.summary-resize-handle {
+  height: 8px;
+  min-height: 8px;
+  flex: 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  background: #f8f8f8;
+  border-top: 1px solid #e1e1e1;
+  border-bottom: 1px solid #e1e1e1;
+  color: #92969c;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.summary-resize-handle:hover {
+  background: #eeeeef;
+  color: #45494f;
+}
+
+/* Results content */
+.summary-layout {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  margin: 0;
+  background: #fff;
+  border: 0;
+  border-radius: 0;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.summary-layout .summary-panel,
+.summary-layout .activity-schedule-panel {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.summary-layout .summary-panel[hidden],
+.summary-layout .activity-schedule-panel[hidden] {
+  display: none !important;
+}
+
+/* Consistent panel headings */
+.summary-panel-head,
+.activity-schedule-head {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 17px;
+  box-sizing: border-box;
+}
+
+.summary-panel-head h2,
+.activity-schedule-head h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #25282d;
+}
+
+.summary-panel-head span,
+.activity-schedule-head span {
+  font-size: 9px;
+  color: #858990;
+}
+
+/* Both tables share the same format */
+.summary-table,
+.activity-schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: 10px;
+  background: #fff;
+}
+
+.summary-table th,
+.summary-table td,
+.activity-schedule-table th,
+.activity-schedule-table td {
+  height: 32px;
+  padding: 7px 17px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 1px solid #e8e8e8;
+  box-sizing: border-box;
+}
+
+.summary-table th,
+.activity-schedule-table th {
+  height: 30px;
+  background: #f5f5f5;
+  color: #777b82;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.summary-table td,
+.activity-schedule-table td {
+  color: #4d5157;
+}
+
+.summary-table td:first-child,
+.activity-schedule-table .schedule-activity-id {
+  color: #31343a;
+  font-weight: 600;
+}
+
+/* Table scrolling */
+.summary-table-wrap,
+.activity-schedule-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow: auto;
+}
+
+.activity-schedule-table .schedule-empty {
+  padding: 20px;
+  text-align: center;
+  color: #898d93;
+}
+
+/* Summary footer */
+.summary-footer {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  padding: 8px 17px;
+  color: #777b81;
+  font-size: 9px;
+  box-sizing: border-box;
+}
+
+.summary-footer strong {
+  color: #383c42;
+  font-weight: 600;
+}
+
+.list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sample-flow-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #d9dce1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #34383f;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sample-flow-button:hover {
+  background: #f7f8fa;
+  border-color: #bfc4cc;
+}
+
+.sample-flow-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
